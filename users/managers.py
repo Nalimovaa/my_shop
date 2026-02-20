@@ -1,0 +1,27 @@
+from django.contrib.auth.base_user import BaseUserManager
+
+
+class CustomUserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError("Email required")
+
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+
+        user = self.create_user(email, password, **extra_fields)
+
+        # Assign the Admin role to the superuser
+        from users.models import Role, UserRole
+        admin_role = Role.objects.get(name="Admin")
+        UserRole.objects.create(user=user, role=admin_role)
+
+        return user
